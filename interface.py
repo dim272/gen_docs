@@ -10,10 +10,9 @@ class DocxUI(QWidget):
         self.initUI()
         self.create_variables(["дата", "ФИО", "Адрес"])
 
-
     def initUI(self):
         self.setGeometry(1100, 800, 1100, 800)
-        self.setWindowTitle("Gen doxs")
+        self.setWindowTitle("Gen docs")
 
         self.templates_output = QListWidget(self)
         self.templates_output.resize(300, 725)
@@ -35,17 +34,17 @@ class DocxUI(QWidget):
         btn_create = QPushButton('Саздать', self)
         btn_create.resize(125, 25)
         btn_create.move(700, 125)
-        btn_create.setStyleSheet('QPushButton {background-color: #A3C1DA }')
+        btn_create.setStyleSheet('QPushButton {background-color: #586580 }')
 
         btn_clear = QPushButton('Очистить', self)
         btn_clear.resize(125, 25)
         btn_clear.move(825, 125)
-        btn_clear.setStyleSheet('QPushButton {background-color: #A3C1DA }')
+        btn_clear.setStyleSheet('QPushButton {background-color: #586580 }')
 
         btn_list = QPushButton('Список', self)
         btn_list.resize(125, 25)
         btn_list.move(950, 125)
-        btn_list.setStyleSheet('QPushButton {background-color: #A3C1DA }')
+        btn_list.setStyleSheet('QPushButton {background-color: #586580 }')
 
         title_info = QLabel(self)
         title_info.resize(50, 25)
