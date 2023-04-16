@@ -3,6 +3,7 @@ import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QLineEdit, QListWidget
 from PyQt5.QtCore import Qt
 
+
 class DocxUI(QWidget):
     def __init__(self):
         super().__init__()
@@ -77,11 +78,6 @@ class DocxUI(QWidget):
             inp.resize(300, 25)
             inp.move(775, (index+1)*25)
             self.variables_list.append((label, inp))
-
-
-
-
-
 
 
 if __name__== "__main__":
