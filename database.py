@@ -39,7 +39,7 @@ class DataBaseInterface:
             )
             self.con.commit()
 
-    def add_templates(self, template_list):
+    def save_templates(self, template_list):
         with self.con:
             cur = self.con.cursor()
             date_added = datetime.now()
@@ -51,20 +51,47 @@ class DataBaseInterface:
                 )
             self.con.commit()
 
-    def read_templates(self):
-        with self.con:
-            cur = self.con.cursor()
-            cur.execute("select * from template")
-            rows = cur.fetchall()
-        return rows
-
     def save_history(self, template_id, used_variables):
         with self.con:
             cur = self.con.cursor()
             date_added = datetime.now()
             cur.execute(
-                "INSERT INTO history (template_id, used_variables, use_date)"
-                "VALUES (?, ?, ?)",
+                """
+                INSERT INTO history (template_id, used_variables, use_date)
+                VALUES (?, ?, ?)
+                """,
                 (template_id, json.dumps(used_variables), date_added)
             )
             self.con.commit()
+
+    def read_templates(self):
+        with self.con:
+            cur = self.con.cursor()
+            cur.execute("SELECT * FROM template")
+            rows = cur.fetchall()
+        return rows
+
+    def read_template_history(self, template_id):
+        with self.con:
+            cur = self.con.cursor()
+            cur.execute(
+                """
+                SELECT * FROM template
+                WHERE template_id = (?)
+                """,
+                (template_id,)
+
+            )
+            history = cur.fetchall()
+        return history
+
+if __name__ == '__main__':
+    x = DataBaseInterface()
+    x.save_templates(
+        []
+    )
+    x.save_history(
+        1,
+        []
+    )
+
