@@ -8,13 +8,14 @@ from const import DB_NAME
 class DataBaseInterface:
 
     def __init__(self):
-        self.con = sqlite3.connect(DB_NAME)
+        self.connection = sqlite3.connect(DB_NAME)
         self.__init_tables()
 
     def __init_tables(self):
-        with self.con:
-            cur = self.con.cursor()
-            cur.execute(
+        """Создание таблиц в БД"""
+        with self.connection:
+            cursor = self.connection.cursor()
+            cursor.execute(
                 """
                 CREATE TABLE IF NOT EXISTS template 
                 (
@@ -25,11 +26,11 @@ class DataBaseInterface:
                 )
                 """
                 )
-            cur.execute(
+            cursor.execute(
                 """
                 CREATE TABLE IF NOT EXISTS history 
                 (
-                    id INTEGER PRIMARY KEY,
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
                     template_id INTEGER NOT NULL,
                     used_variables JSON NOT NULL,
                     use_date DATETIME NOT NULL, 
@@ -37,61 +38,68 @@ class DataBaseInterface:
                 )
                 """
             )
-            self.con.commit()
+            self.connection.commit()
 
-    def save_templates(self, template_list):
-        with self.con:
-            cur = self.con.cursor()
+    def save_templates(self, templates):
+        with self.connection:
+            cursor = self.connection.cursor()
             date_added = datetime.now()
-            for template_filename, variables in template_list.items():
-                cur.execute(
-                    "INSERT OR REPLACE INTO template (path, variables, date_added)"
+            for template_filename, variables in templates.items():
+                cursor.execute(
+                    "INSERT INTO template (path, variables, date_added)"
                     "VALUES (?, ?, ?)",
                     (template_filename, json.dumps(variables), date_added)
                 )
-            self.con.commit()
+            self.connection.commit()
 
     def save_history(self, template_id, used_variables):
-        with self.con:
-            cur = self.con.cursor()
+        with self.connection:
+            cursor = self.connection.cursor()
             date_added = datetime.now()
-            cur.execute(
+            cursor.execute(
                 """
                 INSERT INTO history (template_id, used_variables, use_date)
                 VALUES (?, ?, ?)
                 """,
                 (template_id, json.dumps(used_variables), date_added)
             )
-            self.con.commit()
+            self.connection.commit()
 
     def read_templates(self):
-        with self.con:
-            cur = self.con.cursor()
-            cur.execute("SELECT * FROM template")
-            rows = cur.fetchall()
+        with self.connection:
+            cursor = self.connection.cursor()
+            cursor.execute("SELECT * FROM template")
+            rows = cursor.fetchall()
         return rows
 
     def read_template_history(self, template_id):
-        with self.con:
-            cur = self.con.cursor()
-            cur.execute(
+        with self.connection:
+            cursor = self.connection.cursor()
+            cursor.execute(
                 """
-                SELECT * FROM template
+                SELECT * FROM history
                 WHERE template_id = (?)
                 """,
                 (template_id,)
-
             )
-            history = cur.fetchall()
+            history = cursor.fetchall()
         return history
+
 
 if __name__ == '__main__':
     x = DataBaseInterface()
-    x.save_templates(
-        []
-    )
-    x.save_history(
-        1,
-        []
-    )
-
+    # x.save_templates(
+    #     {
+    #         'test.docx': ['ФИО', 'Адрес', 'Дата'],
+    #         'test2.docx': ['ФИО2', 'Адрес2', 'Дата2']
+    #     }
+    # )
+    #
+    # x.save_history(
+    #     1,
+    #     ['Иванов И.И.', 'Какой-то адрес']
+    # )
+    # templates = x.read_templates()
+    # print(templates)
+    # history = x.read_template_history(1)
+    # print(history)
