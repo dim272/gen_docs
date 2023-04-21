@@ -20,7 +20,7 @@ class DataBaseInterface:
                 CREATE TABLE IF NOT EXISTS template 
                 (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    path TEXT NOT NULL UNIQUE,
+                    name TEXT NOT NULL,
                     variables JSON NOT NULL,
                     date_added DATETIME NOT NULL
                 )
@@ -46,7 +46,7 @@ class DataBaseInterface:
             date_added = datetime.now()
             for template_filename, variables in templates.items():
                 cursor.execute(
-                    "INSERT INTO template (path, variables, date_added)"
+                    "INSERT INTO template (name, variables, date_added)"
                     "VALUES (?, ?, ?)",
                     (template_filename, json.dumps(variables), date_added)
                 )
@@ -72,6 +72,19 @@ class DataBaseInterface:
             rows = cursor.fetchall()
         return rows
 
+    def read_template_by_id(self, template_id):
+        with self.connection:
+            cursor = self.connection.cursor()
+            cursor.execute(
+                """
+                SELECT * FROM template
+                WHERE id = (?)
+                """,
+                (template_id,)
+            )
+            template = cursor.fetchone()
+        return template
+
     def read_template_history(self, template_id):
         with self.connection:
             cursor = self.connection.cursor()
@@ -85,21 +98,16 @@ class DataBaseInterface:
             history = cursor.fetchall()
         return history
 
-
-if __name__ == '__main__':
-    x = DataBaseInterface()
-    # x.save_templates(
-    #     {
-    #         'test.docx': ['ФИО', 'Адрес', 'Дата'],
-    #         'test2.docx': ['ФИО2', 'Адрес2', 'Дата2']
-    #     }
-    # )
-    #
-    # x.save_history(
-    #     1,
-    #     ['Иванов И.И.', 'Какой-то адрес']
-    # )
-    # templates = x.read_templates()
-    # print(templates)
-    # history = x.read_template_history(1)
-    # print(history)
+    def get_template_id(self, template_name):
+        with self.connection:
+            cursor = self.connection.cursor()
+            cursor.execute(
+                """
+                SELECT id FROM template
+                WHERE name = (?)
+                ORDER BY id DESC
+                """,
+                (template_name,)
+            )
+            template_id = cursor.fetchone()
+        return template_id[0]
