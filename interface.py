@@ -10,5 +10,6 @@ class DocxUI(QMainWindow):
 
     def paste_list(self, items, list_obj):
         items.sort()
+        list_obj.clear()
         for template in items:
             list_obj.addItem(template)

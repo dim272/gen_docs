@@ -45,12 +45,28 @@ class DataBaseInterface:
             cursor = self.connection.cursor()
             date_added = datetime.now()
             for template_filename, variables in templates.items():
-                cursor.execute(
-                    "INSERT INTO template (name, variables, date_added)"
-                    "VALUES (?, ?, ?)",
-                    (template_filename, json.dumps(variables), date_added)
-                )
+                json_variables = json.dumps(variables)
+                if not self.template_exist(template_filename, json_variables):
+                    cursor.execute(
+                        "INSERT INTO template (name, variables, date_added)"
+                        "VALUES (?, ?, ?)",
+                        (template_filename, json_variables, date_added)
+                    )
             self.connection.commit()
+
+    def template_exist(self, name, variables):
+        with self.connection:
+            cursor = self.connection.cursor()
+            cursor.execute(
+                """
+                SELECT variables FROM template
+                WHERE name=(?)
+                """,
+                (name,)
+            )
+            result = cursor.fetchone()
+            if result:
+                return result[0] == variables
 
     def save_history(self, template_id, used_variables):
         with self.connection:

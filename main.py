@@ -1,19 +1,25 @@
 import sys
 import json
+from pathlib import Path
 
 from docxtpl import DocxTemplate
 from PyQt5.QtWidgets import QApplication
 
 from database import DataBaseInterface
 from interface import DocxUI
-from const import TEMPLATES_DIR
+from const import TEMPLATES_DIR, RESULT_DIR
 
 
 class GenDocs:
     def __init__(self):
+        self.user_variables = {}   # Переменные, вводимые пользователем
         self.db = DataBaseInterface()
         self.ui = DocxUI()
         self.ui.listWidget.clicked.connect(self.click_template)
+        self.ui.listWidget_3.clicked.connect(self.update_user_variable)
+        self.ui.pushButton.clicked.connect(self.collect_user_variables)
+        self.ui.pushButton_3.clicked.connect(self.clear_user_variables)
+        self.ui.pushButton_4.clicked.connect(self.generate_document)
         templates = self.get_templates()
         templates_and_variables = self.get_variables(templates)
         self.db.save_templates(templates_and_variables)
@@ -30,7 +36,7 @@ class GenDocs:
         for template_path in template_list:
             doc = DocxTemplate(template_path)
             template_variables = doc.undeclared_template_variables
-            variables[template_path.name] = list(template_variables)
+            variables[template_path.name] = sorted(list(template_variables))
 
         return variables
 
@@ -57,19 +63,46 @@ class GenDocs:
         variables = json.loads(variables)
         self.ui.paste_list(variables, self.ui.listWidget_3)
 
+    def collect_user_variables(self):
+        variable = self.ui.listWidget_3.currentItem().text()
+        value = self.ui.lineEdit.text()
+        self.user_variables[variable] = value
+        self.ui.textBrowser.setText(json.dumps(self.user_variables))
 
-# RESULT_DIR = Path().absolute() / 'results'
-# TEST_FILE = TEMPLATES_DIR / 'test.docx'
-# RESULT = RESULT_DIR / 'result.docx'
-#
-# doc = DocxTemplate(TEST_FILE)
-# context = {
-#     'фио': "Петров М. М.",
-#     'дни': "14",
-#     'дата': "27.07.2023"
-# }
-# doc.render(context)
-# doc.save(RESULT)
+    def clear_user_variables(self):
+        self.user_variables.clear()
+        self.ui.textBrowser.setText(json.dumps(self.user_variables))
+
+    def update_user_variable(self):
+        variable = self.ui.listWidget_3.currentItem().text()
+        if variable in self.user_variables:
+            self.ui.lineEdit.setText(self.user_variables[variable])
+        else:
+            self.ui.lineEdit.clear()
+
+    def create_button(self):
+        pass
+
+    def generate_document(self):
+        if self.user_variables:
+            # TODO проверять количество переменных
+            # TODO не перезаписывать файл
+
+            template_name = self.ui.listWidget.currentItem().text()
+            template_path = Path(TEMPLATES_DIR / template_name)
+            result_path = Path(RESULT_DIR / template_name)
+            doc = DocxTemplate(template_path)
+            doc.render(self.user_variables)
+            doc.save(result_path)
+
+            self.save_history(template_name)
+        else:
+            self.ui.textBrowser.setText('Создание не возможно. Не все значения заполнены.')
+
+    def save_history(self, template_name):
+        used_variables = self.user_variables
+        template_id = self.db.get_template_id(template_name)
+        self.db.save_history(template_id, used_variables)
 
 
 if __name__ == '__main__':
