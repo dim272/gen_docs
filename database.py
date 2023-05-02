@@ -68,10 +68,9 @@ class DataBaseInterface:
             if result:
                 return result[0] == variables
 
-    def save_history(self, template_id, used_variables):
+    def save_history(self, template_id, used_variables, date_added):
         with self.connection:
             cursor = self.connection.cursor()
-            date_added = datetime.now()
             cursor.execute(
                 """
                 INSERT INTO history (template_id, used_variables, use_date)
