@@ -2,14 +2,13 @@ import sys
 import json
 from pathlib import Path
 from datetime import datetime
-from dateutil import parser as dateutil_parser
 
 from docxtpl import DocxTemplate
 from PyQt5.QtWidgets import QApplication
 
 from database import DataBaseInterface
 from interface import DocxUI
-from const import TEMPLATES_DIR, RESULT_DIR, FROM_DATETIME, HISTORY_DATETIME
+from const import TEMPLATES_DIR,RESULT_DIR, RESULT_DIR_NAME, FROM_DATETIME, HISTORY_DATETIME
 
 
 class GenDocs:
@@ -54,6 +53,7 @@ class GenDocs:
     def click_template(self):
         self.show_history()
         self.show_variables()
+        self.ui.textBrowser.setText('Выберите переменные шаблона в списке истории или введите вручную.')
 
     def clear_date(self, date_str):
         date_time = datetime.strptime(date_str, FROM_DATETIME)
@@ -78,11 +78,12 @@ class GenDocs:
         variable = self.ui.listWidget_3.currentItem().text()
         value = self.ui.lineEdit.text()
         self.user_variables[variable] = value
-        self.ui.textBrowser.setText(json.dumps(self.user_variables))
+        expected_variables = [self.ui.listWidget_3.item(x).text() for x in range(self.ui.listWidget_3.count())]
+        self.ui.textBrowser.setText(self.pretty_user_variables(expected_variables))
 
     def clear_user_variables(self):
         self.user_variables.clear()
-        self.ui.textBrowser.setText(json.dumps(self.user_variables))
+        self.ui.textBrowser.setText('Все переменные очищены.')
 
     def update_user_variable(self):
         variable = self.ui.listWidget_3.currentItem().text()
@@ -94,17 +95,20 @@ class GenDocs:
     def is_variables_correct(self, template_name):
         template_path = Path(TEMPLATES_DIR / template_name)
         template_variables = self.get_variables(template_path)
+        correct_variables = {}
         for variable in template_variables:
             if variable not in self.user_variables:
                 return False
-        return True
+            correct_variables[variable] = self.user_variables[variable]
+        return correct_variables
 
     def create_button(self):
         template_name = self.ui.listWidget.currentItem().text()
-        if self.is_variables_correct(template_name + '.docx'):
+        correct_variables = self.is_variables_correct(template_name + '.docx')
+        if correct_variables:
             date_time = datetime.now()
             self.generate_document(template_name, date_time)
-            self.save_history(template_name, date_time)
+            self.save_history(template_name, date_time, correct_variables)
         else:
             self.ui.textBrowser.setText('Создание невозможно. Не все значения заполнены.')
 
@@ -117,18 +121,19 @@ class GenDocs:
         return correct_variables
 
     def generate_document(self, template_name, date_time):
-        datetime_str = date_time.strftime('%d_%h_%Y_%H_%M_%S')
+        datetime_str = date_time.strftime('%d %h %Y %H-%M-%S')
         template_path = Path(TEMPLATES_DIR / (template_name + '.docx'))
-        result_path = Path(RESULT_DIR / f'{template_name}_{datetime_str}.docx')
+        file_name = f'{template_name} {datetime_str}.docx'
+        result_path = Path(RESULT_DIR / file_name)
         doc = DocxTemplate(template_path)
         correct_variables = self.get_correct_variables(doc)
         doc.render(correct_variables)
         doc.save(result_path)
+        self.ui.textBrowser.setText(f'Создан документ:\n"{file_name}"\n и сохранён в папку "{RESULT_DIR_NAME}"')
 
-    def save_history(self, template_name, date_time):
-        used_variables = self.user_variables
+    def save_history(self, template_name, date_time, correct_variables):
         template_id = self.db.get_template_id(template_name)
-        self.db.save_history(template_id, used_variables, date_time)
+        self.db.save_history(template_id, correct_variables, date_time)
 
     def click_history_list(self):
         variable = self.ui.listWidget_2.currentItem().text()
@@ -141,6 +146,16 @@ class GenDocs:
                 template_variables = json.loads(template_row[2])
                 self.user_variables.update(**template_variables)
                 break
+        self.ui.textBrowser.setText(self.pretty_user_variables(expected_variables=list(template_variables.keys())))
+
+    def pretty_user_variables(self, expected_variables):
+        result = ''
+        for variable in expected_variables:
+            if variable in self.user_variables:
+                result += f'{variable}: {self.user_variables[variable]}\n'
+
+        result += '\nКогда все значения будут заполнены, нажмите кнопку "Создать".'
+        return result
 
 
 if __name__ == '__main__':
@@ -154,9 +169,11 @@ if __name__ == '__main__':
 # -- TODO очищать переменные ... -- в автоматическом режиме не будем
 # -- TODO не перезаписывать файл
 # -- TODO при выборе истории забирать значения переменных из бд
-# TODO выводить подсказки в инфо
+# -- TODO выводить подсказки в инфо
 # TODO изменить переменную с пробелом на нижнее подчёркивание (в ui вернуть)
 # TODO убрать .docx из названия в шаблонах
 # TODO список история обновлять при нажатии на кнопку создать
-# TODO из списка истории убрать миллисекунды
+# -- TODO из списка истории убрать миллисекунды
+# TODO сортировать даты в истории
+# TODO кнопка "Папка результатов"
 
