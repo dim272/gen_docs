@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QApplication
 
 from database import DataBaseInterface
 from interface import DocxUI
-from const import TEMPLATES_DIR,RESULT_DIR, RESULT_DIR_NAME, FROM_DATETIME, HISTORY_DATETIME
+from const import TEMPLATES_DIR, RESULT_DIR, RESULT_DIR_NAME, FROM_DATETIME, HISTORY_DATETIME
 
 
 class GenDocs:
@@ -24,13 +24,20 @@ class GenDocs:
         self.ui.pushButton_3.clicked.connect(self.clear_user_variables)
         self.ui.pushButton_4.clicked.connect(self.create_button)
         templates = self.get_templates()
-        templates_and_variables = self.collect_variables(templates)
-        self.db.save_templates(templates_and_variables)
-        self.paste_ui_template_list(templates_and_variables)
+        if templates:
+            templates_and_variables = self.collect_variables(templates)
+            self.db.save_templates(templates_and_variables)
+            self.paste_ui_template_list(templates_and_variables)
+        else:
+            self.ui.textBrowser.setText('Для начала работы, создайте шаблоны в формате .docx с необходимыми '
+                                        'переменными в двойных фигурных скобках:\n\n'
+                                        '{{ название_переменной }}\n\n'
+                                        f'и сохраните файл в папку\n"{TEMPLATES_DIR}",\n которую поместите рядом с '
+                                        f'исполнительным файлом')
 
     @staticmethod
     def get_templates():
-        return TEMPLATES_DIR.glob('*.docx')
+        return list(TEMPLATES_DIR.glob('*.docx'))
 
     def get_variables(self, template_path):
         doc = DocxTemplate(template_path)
@@ -109,6 +116,7 @@ class GenDocs:
             date_time = datetime.now()
             self.generate_document(template_name, date_time)
             self.save_history(template_name, date_time, correct_variables)
+            self.show_history()
         else:
             self.ui.textBrowser.setText('Создание невозможно. Не все значения заполнены.')
 
@@ -170,10 +178,15 @@ if __name__ == '__main__':
 # -- TODO не перезаписывать файл
 # -- TODO при выборе истории забирать значения переменных из бд
 # -- TODO выводить подсказки в инфо
-# TODO изменить переменную с пробелом на нижнее подчёркивание (в ui вернуть)
-# TODO убрать .docx из названия в шаблонах
-# TODO список история обновлять при нажатии на кнопку создать
+# -- TODO убрать .docx из названия в шаблонах
+# -- TODO список история обновлять при нажатии на кнопку создать
 # -- TODO из списка истории убрать миллисекунды
-# TODO сортировать даты в истории
-# TODO кнопка "Папка результатов"
+# -- TODO сортировать даты в истории
+# -- TODO добавить в инфо когда нет шаблонов
+
+# TODO кнопка "Папка результатов":
+#       Создать "Папка результатов"
+#       Удалить кнопку "Список"
+#       Перенести кнопку "Очистить"
+# TODO при запуске приложение проверять наличие папок, если их нет - создавать
 
