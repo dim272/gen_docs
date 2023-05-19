@@ -1,5 +1,7 @@
+import os
 import sys
 import json
+import subprocess
 from pathlib import Path
 from datetime import datetime
 
@@ -15,12 +17,16 @@ class GenDocs:
     def __init__(self):
         self.user_variables = {}        # Переменные, вводимые пользователем
         self.template_history = []      # История выбранного шаблона
+
+        self.init_work_dirs()
+
         self.db = DataBaseInterface()
         self.ui = DocxUI()
         self.ui.listWidget.clicked.connect(self.click_template)
         self.ui.listWidget_3.clicked.connect(self.update_user_variable)
         self.ui.pushButton.clicked.connect(self.collect_user_variables)
         self.ui.listWidget_2.clicked.connect(self.click_history_list)
+        self.ui.pushButton_2.clicked.connect(self.open_result_folder)
         self.ui.pushButton_3.clicked.connect(self.clear_user_variables)
         self.ui.pushButton_4.clicked.connect(self.create_button)
         templates = self.get_templates()
@@ -33,7 +39,13 @@ class GenDocs:
                                         'переменными в двойных фигурных скобках:\n\n'
                                         '{{ название_переменной }}\n\n'
                                         f'и сохраните файл в папку\n"{TEMPLATES_DIR}",\n которую поместите рядом с '
-                                        f'исполнительным файлом')
+                                        'исполнительным файлом')
+
+    @staticmethod
+    def init_work_dirs():
+        for path in [RESULT_DIR, TEMPLATES_DIR]:
+            if not path.is_dir():
+                path.mkdir()
 
     @staticmethod
     def get_templates():
@@ -165,6 +177,12 @@ class GenDocs:
         result += '\nКогда все значения будут заполнены, нажмите кнопку "Создать".'
         return result
 
+    def open_result_folder(self):
+        try:
+            os.startfile(RESULT_DIR)
+        except:
+            subprocess.Popen(['xdg-open', RESULT_DIR])
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
@@ -173,20 +191,5 @@ if __name__ == '__main__':
     ui.show()
     sys.exit(app.exec())
 
-# -- TODO проверять количество переменных
-# -- TODO очищать переменные ... -- в автоматическом режиме не будем
-# -- TODO не перезаписывать файл
-# -- TODO при выборе истории забирать значения переменных из бд
-# -- TODO выводить подсказки в инфо
-# -- TODO убрать .docx из названия в шаблонах
-# -- TODO список история обновлять при нажатии на кнопку создать
-# -- TODO из списка истории убрать миллисекунды
-# -- TODO сортировать даты в истории
-# -- TODO добавить в инфо когда нет шаблонов
 
-# TODO кнопка "Папка результатов":
-#       Создать "Папка результатов"
-#       Удалить кнопку "Список"
-#       Перенести кнопку "Очистить"
-# TODO при запуске приложение проверять наличие папок, если их нет - создавать
-
+# TODO stand-alone
