@@ -1,4 +1,8 @@
+"""
+Файл с константами для проекта.
+"""
 from pathlib import Path
+
 TEMPLATE_DIR_NAME = 'templates'
 TEMPLATES_DIR = Path().absolute() / TEMPLATE_DIR_NAME
 RESULT_DIR_NAME = 'results'
